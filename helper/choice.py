@@ -1,0 +1,1 @@
+NEW, ACTIVE = "new", "active"
