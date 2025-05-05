@@ -149,3 +149,40 @@ class LoginSerializer(serializers.Serializer):
         return user
 
 
+class ResendCodeSerializer(serializers.Serializer):
+    phone = serializers.CharField(max_length=255, required=True)
+
+    def create(self, validated_data):
+
+        phone = validated_data.get("phone")
+        verify_code = models.CodeVerification.objects.filter(
+            user__phone=phone
+        ).first()
+
+        if not verify_code:
+            raise serializers.ValidationError(
+                {"phone": "Malumot topilmadi"}
+            )
+
+        if verify_code.expire_date >= datetime.now():
+            raise serializers.ValidationError(
+                {"phone": "Sizda aktiv kod mavjud iltimos kuting!"}
+            )
+
+        new_code = ''.join([str(random.randint(0, 9)) for _ in range(4)])
+
+        verify_code.code = new_code
+        verify_code.expire_date = datetime.now() + timedelta(seconds=120)
+        verify_code.save()
+
+        return validated_data
+
+
+class ProfileSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = models.CustomUser
+        fields = (
+            "id", "phone", "full_name"
+        )
+

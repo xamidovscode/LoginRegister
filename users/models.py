@@ -1,8 +1,14 @@
 from django.contrib.auth.models import AbstractUser, BaseUserManager
+from django.core.validators import RegexValidator
 from django.db import models
 from helper.choice import *
 from rest_framework_simplejwt.tokens import RefreshToken
-# from django.core.cache import cache
+
+
+phone_validator = RegexValidator(
+    regex=r'^\+998\d{9}$',
+    message="Telefon raqami +998 bilan boshlanib, jami 13 ta raqamdan iborat bo‘lishi kerak (masalan: +998901234567)"
+)
 
 class BaseModel(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
@@ -39,13 +45,24 @@ class CustomUser(AbstractUser):
         (ACTIVE, "Active")
     ]
 
+    ROLE_CHOICES = [
+        ('student', "Student"),
+        ('teacher', "Teacher"),
+        ('admin', "Admin")
+    ]
+
     username = None
     first_name = None
     last_name = None
     email = None
 
+    role = models.CharField(max_length=255, choices=ROLE_CHOICES, default="student")
     status = models.CharField(max_length=255, choices=STATUS_CHOICES, default=NEW)
-    phone = models.CharField(max_length=255, unique=True)
+    phone = models.CharField(
+        max_length=255,
+        validators=[phone_validator],
+        unique=True
+    )
     full_name = models.CharField(max_length=255, null=True)
 
     USERNAME_FIELD = 'phone'
@@ -66,6 +83,7 @@ class CustomUser(AbstractUser):
             "refresh_token": str(refresh),
             "access_token": str(refresh.access_token),
         }
+
 
 class CodeVerification(BaseModel):
     code = models.CharField(
